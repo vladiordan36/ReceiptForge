@@ -9,20 +9,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/receipt-forge")
+@RequestMapping({"/receipt-forge"})
 public class ReceiptForgeController {
-
     private final ReceiptForgeService receiptForgeService;
 
     @Autowired
-    public ReceiptForgeController (ReceiptForgeService receiptForgeService) {
+    public ReceiptForgeController(ReceiptForgeService receiptForgeService) {
         this.receiptForgeService = receiptForgeService;
     }
 
-    @GetMapping("/get-receipt")
-    public ResponseEntity<Receipt> getMockReceipt () {
+    @GetMapping({"/get-receipt"})
+    public ResponseEntity<Receipt> getMockReceipt() {
         return ResponseEntity.ok(receiptForgeService.getReceipt());
+    }
 
+    @GetMapping({"/generate-bulk-receipts"})
+    public ResponseEntity<String> getBulkMockReceiptInFile() {
+        return ResponseEntity.ok(receiptForgeService.generateBulkReceiptsInFiles());
     }
 }
-
