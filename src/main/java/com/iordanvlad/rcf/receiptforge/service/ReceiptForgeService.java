@@ -1,50 +1,57 @@
 package com.iordanvlad.rcf.receiptforge.service;
 
+import com.iordanvlad.rcf.receiptforge.helper.ReceiptFileWriter;
 import com.iordanvlad.rcf.receiptforge.helper.ReceiptForgeHelper;
 import com.iordanvlad.rcf.receiptforge.outputmodels.Item;
 import com.iordanvlad.rcf.receiptforge.outputmodels.Receipt;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import org.springframework.stereotype.Service;
 
 @Service
 public class ReceiptForgeService {
-
-    private static final double VALUE_VARIATION_PERCENTAGE = 0.05; // 5% value variation
-    private static final int DAYS_AGO = 30;
+    private static final int DAYS_AGO = 365;
     private static final int MAX_ITEM_NUMBER = 30;
     private static final int MAX_ITEM_QUANTITY = 5;
-
-    private final List<String> stores;
+    private static final int MAX_RECEIPTS = 100;
+    private final Map<String, String> stores;
     private final Map<String, List<String>> productsByCategory;
     private final Map<String, Double> prices;
     private final ReceiptForgeHelper receiptForgeHelper;
 
-    public ReceiptForgeService (ReceiptForgeHelper receiptForgeHelper) {
+    public ReceiptForgeService(ReceiptForgeHelper receiptForgeHelper) {
         this.receiptForgeHelper = receiptForgeHelper;
         this.productsByCategory = receiptForgeHelper.populateItems();
         this.prices = receiptForgeHelper.populatePrices();
         this.stores = receiptForgeHelper.populateStores();
     }
 
-    public Receipt getReceipt () {
+    public Receipt getReceipt() {
         Random random = new Random();
 
-        String storeName = stores.get(random.nextInt(stores.size()));
-        LocalDateTime purchaseDate = receiptForgeHelper.generateRandomDate(DAYS_AGO); // Generate random purchase date
-        double totalSpent = 0; // Initialize total spent
+        String storeName = receiptForgeHelper.getRandomStore(stores);
+        String storeAddress = stores.get(storeName);
+        LocalDateTime purchaseDate = receiptForgeHelper.generateRandomDate(DAYS_AGO);
 
-        List<Item> items = new ArrayList<>();
-        for (int i = 0; i < random.nextInt(MAX_ITEM_NUMBER) + 1; i++) {
+        double totalSpent = 0.0;
+        int totalQuantity = 0;
+        List<Item> items = new ArrayList();
+
+        for (int i = 0; i < random.nextInt(MAX_ITEM_NUMBER) + 1; ++i) {
             String category = receiptForgeHelper.getRandomCategory(productsByCategory);
-            String productName = this.productsByCategory.get(category)
-                    .get(random.nextInt(this.productsByCategory.get(category).size()));
-            double price = receiptForgeHelper.getPriceWithVariation(prices.getOrDefault(productName, 1.0));
+            String productName = productsByCategory.get(category).get(random.nextInt(productsByCategory.get(category).size()));
 
-            int quantity = random.nextInt(MAX_ITEM_QUANTITY) + 1; // Random quantity, 1 or more
+            double price = receiptForgeHelper.getPriceWithVariation(prices.getOrDefault(productName, 1.0));
+            int quantity = random.nextInt(MAX_ITEM_QUANTITY) + 1;
             double totalPrice = receiptForgeHelper.roundToTwoDecimals(price * quantity);
-            totalSpent += totalPrice; // Accumulate total spent
+
+            totalSpent += totalPrice;
+            totalQuantity++;
 
             Item item = Item.builder()
                     .name(productName)
@@ -58,9 +65,20 @@ public class ReceiptForgeService {
 
         return Receipt.builder()
                 .storeName(storeName)
+                .storeAddress(storeAddress)
                 .purchaseDate(String.valueOf(purchaseDate))
-                .totalSpent(totalSpent)
-                .items(items)
-                .build();
+                .totalSpent(receiptForgeHelper.roundToTwoDecimals(totalSpent))
+                .totalQuantity(totalQuantity)
+                .items(items).build();
+    }
+
+    public String generateBulkReceiptsInFiles() {
+        for (int i = 0; i < MAX_RECEIPTS; ++i) {
+            Receipt receipt = getReceipt();
+            String filePath = "E:\\Facultate\\Licenta\\data\\" + receipt.getPurchaseDate().hashCode() + ".json";
+            ReceiptFileWriter receiptFileWriter = new ReceiptFileWriter();
+            receiptFileWriter.writeReceiptToFile(receipt, filePath);
+        }
+        return "Success";
     }
 }

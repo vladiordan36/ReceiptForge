@@ -12,9 +12,17 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Receipt {
+
     private String storeName;
+
+    private String storeAddress;
+
     private String purchaseDate;
+
     private double totalSpent;
+
+    private int totalQuantity;
+
     private List<Item> items;
 }
 

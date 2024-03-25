@@ -11,9 +11,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Item {
+
     private String name;
+
     private double price;
+
     private double totalPrice;
+
     private int quantity;
+
     private String category;
 }
